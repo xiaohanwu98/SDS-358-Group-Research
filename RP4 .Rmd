@@ -1,0 +1,304 @@
+---
+title: "RP 4"
+author: "Xiaohan Wu"
+date: "12/4/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## I. Group Member
+Xiaohan Wu (xw4822)  
+Ningxin Liu (nl8385)   
+Binglin Zhang (bz3856)
+      
+## II. Research Topic
+
+This research focuses on investigating the effect of Attack, Defense, Special Attack, Special Defense, and Speed on the HP and understanding the way of designers balancing the HP of each kind of Pokemon within other characteristics. 
+
+## III. Variables
+
+| Predictor     |                                      Description                                     |
+|:---------:    |:------------------------------------------------------------------------------------:|
+| Attack        | The base modifier for normal attacks (eg. Scratch, Punch)                            |
+| Defense       | The base damage resistance against normal attacks                                    |
+| Sp..Atk       | Special attack, the base modifier for special attacks (e.g. fire blast, bubble beam) |
+| Sp..Def       | The base damage resistance against special attacks                                   |
+| Speed         | Determines which Pokemon attacks first each round                                    |
+       
+| Response 	|                                       Description                                      	|
+|:--------:	|:--------------------------------------------------------------------------------------:	|
+| HP       	| hit points, or health, defines how much damage a Pokemon can withstand before fainting 	|
+
+
+
+## IV. Methods of collecting the data
+
+The original data set comes from Kaggle: [pokemon dataset](https://www.kaggle.com/abcsds/pokemon)[1]
+
+It contains 721 Pokemon, including their number, name, first and second type, and basic stats: HP, Attack, Defense, Special Attack, Special Defense, and Speed. The data is about the pokemon game and comes from[1]:      
+     
+* pokemon.com
+* pokemondb
+* bulbapedia
+
+## V. Predictions of the Relationship
+
+The research aims to run a multiple linear regression analysis on predictors and the response. We are expecting to see a negative association between each predictor and the response.
+
+## VI. Snippet of data
+
+We only keep the data of five predictors and the response we need.
+
+```{r install, echo=FALSE, results='hide', message=FALSE}
+install.packages("tidyverse")
+install.packages("psych")
+```
+
+```{r load lib&data, echo=FALSE, results='hide', message=FALSE}
+library(tidyverse)
+library(psych)
+raw_data <- read.csv("Pokemon.csv")
+data <- raw_data[c("HP", "Attack", "Defense", "Sp..Atk", "Sp..Def", "Speed")]
+```
+
+## VII. Univariate Analysis
+
+### Summary of Data
+
+```{r data head} 
+head(data, n=5)
+```
+
+```{r Mean and SD of Attack, Defense, Special Attack, Special Defense, Speed}
+summary.extended <- data %>%
+select(Attack, Defense, Sp..Atk, Sp..Def, Speed) %>% 
+psych::describe(fast = TRUE) %>% 
+as_tibble(rownames="rowname") %>% 
+print(summary.extended) 
+```
+
+### Histograms 
+```{r histogram1}
+# histogram for Attack
+ggplot(raw_data, aes(Attack))+geom_histogram(fill="lightblue")+labs(title = "histogram for Attack", x="Attack", y="relative frequency")+theme_classic()
+```
+
+The distribution of the predictor Attack is approximately normal distribution and skewed to the right. 
+
+```{r histogram2}
+# histogram for Defense
+ggplot(raw_data, aes(Defense))+geom_histogram(fill="lightgreen")+labs(title = "histogram for Defense", x="Defense", y="relative frequency")+theme_classic()
+```
+
+The distribution of the predictor Attack is approximately normal distribution and skewed to the right with some possible outliers. 
+
+```{r histogram3}
+# histogram for Special Attack
+ggplot(raw_data, aes(Sp..Atk))+geom_histogram(fill="red")+labs(title = "Special Attack", x="Special Attack", y="relative frequency")+theme_classic() 
+```
+
+The distribution of the predictor Attack is approximately normal distribution and skewed to the right with some possible outliers.   
+
+```{r histogram4}
+# histogram for Special Defense
+ggplot(raw_data, aes(Sp..Def))+geom_histogram(fill="green")+labs(title = "Special Defense", x="Special Defense", y="relative frequency")+theme_classic() 
+```
+
+The distribution of the predictor Attack is approximately normal distribution and skewed to the right with some possible outliers. 
+
+## VIII. Regression Analysis 
+
+```{r regression funciton all predictiors}
+reg_function <- lm(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed,raw_data) 
+coefficients(reg_function) 
+```
+The regression function is $HP = 31.483 + 0.296Attack - 0.0840Defense + 0.110SpecialAttack + 0.264SpecialDefense - 0.094Speed$.   
+      
+* For every one unit increase in the Attack, we expect an average $0.296$ increase in the HP. 
+* For every one unit increase in the Defense, we expect an average $0.0840$ decrease in the HP. 
+* For every one unit increase in the Special Attack, we expect an average $0.110$ increase in the HP. 
+* For every one unit increase in the Special Defense, we expect an average $0.264$ increase in the HP. 
+* For every one unit increase in the Speed, we expect an average $0.296$ decrease in the HP. 
+'
+```{r SSE, MSE AND SQUARE ROOT OF MSE}
+# Save fitted (or predicted) values
+raw_data$predicted <- predict(reg_function) # Save residuals 
+raw_data$resids <- residuals(reg_function) # Square the residuals 
+raw_data$resid2 <- raw_data$resids^2
+# Sum the squared residuals
+SSE <- sum(raw_data$resid2)
+# Divide by the degree of freedom to find the MSE
+MSE <- SSE/(22)
+# Square root the MSE to find an estimate of \sigma res_sd_error <- sqrt(MSE)
+param <- matrix(c(SSE, MSE, sqrt(MSE)),ncol=3,byrow=TRUE)
+colnames(param) <- c("SSE", "MSE", "RMSE")
+param
+```
+
+## IX. Planning for Analysis
+```{r install, echo=FALSE, results='hide', message=FALSE}
+# install.packages("tidyverse")
+# install.packages("psych")
+# install.packages("aod")
+# install.packages("ggplot2")
+```
+```{r load lib&data, echo=FALSE, results='hide', message=FALSE}
+library(tidyverse)
+library(car)
+library(psych)
+library(aod)
+library(ggplot2)
+library(leaps)
+library(readr)
+raw_data <- read.csv("Pokemon.csv")
+data <- raw_data[c("HP", "Attack", "Defense", "Sp..Atk", "Sp..Def", "Speed")]
+```
+
+## Correlation Matrix Plot
+```{r cor matrix}
+pairs.panels(data, method = "pearson")
+```
+
+## Interaction Analysis
+```{r interaction1}
+# Calculate the interaction term:
+data <- data %>%
+  mutate(def.spdf = Defense*Sp..Def)
+# Fit the regression model with 2 predictors and the interaction effect
+reg2 <- lm(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed + def.spdf, data)
+# Display the summary table for the regression model
+summary(reg2)
+``` 
+
+```{r interaction2}
+# Calculate the interaction term:
+data <- data %>%
+  mutate(spat.spdf = Sp..Atk*Sp..Def)
+# Fit the regression model with 2 predictors and the interaction effect
+reg3 <- lm(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed + spat.spdf, data)
+# Display the summary table for the regression model
+summary(reg3)
+```
+
+```{r interaction3}
+# Calculate the interaction term:
+data <- data %>%
+  mutate(atk.df = Attack*Defense)
+# Fit the regression model with 2 predictors and the interaction effect
+reg4 <- lm(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed + atk.df, data)
+# Display the summary table for the regression model
+summary(reg4)
+```
+
+```{r interaction4}
+# Calculate the interaction term:
+data <- data %>%
+  mutate(spat.speed = Sp..Atk*Speed)
+# Fit the regression model with 2 predictors and the interaction effect
+reg5 <- lm(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed + spat.speed, data)
+# Display the summary table for the regression model
+summary(reg5)
+```
+
+The significant interactions are Attack\*Defense and Defense\*SpecialAttack.
+
+
+## Model Selection 
+
+```{r stepwise forward}
+#stepwise regression forward selection
+data <- data %>%
+mutate(atk.df = Attack*Defense, def.spdf = Defense*Sp..Def)
+FitStart <-lm(HP ~1, data)
+FitAll <- lm(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed + def.spdf +atk.df, data)
+step(FitStart,direction="forward", scope =formula(FitAll))
+```
+
+```{r stepwise backward}
+#stepwise regression backward selection
+step(FitAll,direction="backward", scope =formula(FitStart))
+```
+  
+The results indicate that we should include all predictors expcept the Defense in the model. However, by the hierarchy principle, since we include the interaction term Defense*Attack, we have to include the Defense in our model. 
+
+```{r best subset}
+#best subset regression
+models <- regsubsets(HP~Attack+Defense+Sp..Atk+Sp..Def+Speed + def.spdf +atk.df, data, nvmax =7)
+summary(models)
+models.sum <-summary(models)
+par(mfrow =c(2,2))
+# SSE
+plot(models.sum$rss, xlab ="Number of predictors", ylab ="SSE", type ="l")
+# R2
+plot(models.sum$adjr2, xlab ="Number of predictors", ylab ="Adjusted RSq", type ="l")
+# Mallow's Cp
+plot(models.sum$cp, xlab ="Number of predictors", ylab ="Cp", type ="l")
+# BIC
+plot(models.sum$bic, xlab ="Number of predictors", ylab ="BIC", type ="l")
+```
+  
+The best subset selection method indicates that we shall use the model with seven predictors since the model has highest Adjusted $R^2$ and lowest SSE and $C_p$, although the BIC of the model is a little bit higher. 
+
+## Diagnostic 
+```{r model with interactions}
+reg <- lm(HP~ Attack+Defense+Sp..Atk+Sp..Def+Speed+def.spdf+atk.df, data)
+summary(reg)
+```
+We decide to choose the model $HP = 21.687 + 0.141Attack + 0.054Defense + 0.084SpecialAttack + 0.597SpecilDefense - 0.098Speed - 0.0036Defense*SpecialDefense + 0.002Attack*Defense$
+
+### Residual Plot
+```{r residuals}
+data$resids <- residuals(reg)
+data$predicted <- predict(reg)
+```
+
+```{r residual plot}
+ggplot(data, aes(x=Defense, y=resids)) + 
+  geom_point() + geom_hline(color='blue', yintercept = 0)
+```
+   
+The residual plot shows that the model does not violate the linearity condition. However the condition of equal variance is not met. Moreover, there are some outliers. 
+
+
+```{r normal probability plot}
+ggplot(data, aes(sample=resids)) +
+  stat_qq() + stat_qq_line()
+```
+    
+From the normal probability plot, we can see that the normal assumption of the normality of the errors seems to be approximately met except some outliers on the right tail. Therefore, we shall consider a log transformation on the response. 
+
+### Log Transformation on Response
+```{r transformation}
+data <- data %>%
+  mutate(lnHP = log(HP))
+```
+
+```{r reg}
+reg_ln_old <- lm(lnHP ~ Attack+Defense+Sp..Atk+Sp..Def+Speed+def.spdf+atk.df, data)
+summary(reg_ln_old)
+reg_ln <- lm(lnHP ~ Attack+Defense+Sp..Atk+Sp..Def+Speed+def.spdf, data)
+summary(reg_ln)
+data$resids2 <- residuals(reg_ln)
+data$predicted2 <- predict(reg_ln)
+```
+  
+After the log transformation for y, the atk.df has p-value larger than 0.05, so we omitted it from the model and did diagnostic analysis. 
+
+```{r residual plot2}
+ggplot(data, aes(x=predicted2, y=resids2)) + 
+  geom_point() + geom_hline(color='blue', yintercept = 0)
+```
+
+The residual plot indicates that the conditions of constant variance for error terms and linearity are met, except some outliers. 
+
+```{r normal probability plot2}
+ggplot(data, aes(sample=resids2)) +
+  stat_qq() + stat_qq_line()
+```
+The assumption of the normality of the errors seems to be approximately met and is better than the previous model. 
+
+## Reference 
+[1]Barradas, A. (2016, August 29). Pokemon with stats. Retrieved October 13, 2020, from https://www.kaggle.com/abcsds/pokemon
