@@ -2,6 +2,7 @@
 SDS 358, FALL 2020, UT Austin
 
 I. Research Topic : An Analysis on the Effect of Characteristics of Pokemon on their HP Variations.
+
 Investigating the effect of Attack, Defense, Special Attack, Special Defense, and Speed on the HP and understanding the way of designers balancing the HP of each kind of Pokemon within other characteristics. 
 
 II. Files:
